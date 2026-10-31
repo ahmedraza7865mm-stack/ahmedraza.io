@@ -10,7 +10,6 @@ js/main.js          page scripts (counters, animations, menu, working hours)
 js/loader.js        battery loading screen
 js/eyes.js          eyes that follow the cursor
 js/fx.js            cursor circle and moving hero background
-js/dino.js          small spinning dino in the corner
 assets/images/      photo, logo and project screenshots
 assets/video/       showreel video
 robots.txt, sitemap.xml  for search engines
@@ -29,4 +28,3 @@ To open it on your own computer, just double-click `index.html`.
 - Fonts (Bricolage Grotesque and DM Sans) load free from Google Fonts. Without internet the site falls back to system fonts.
 - The contact form opens the visitor's email app addressed to wqahmedraza@gmail.com (no server needed).
 - To change the CV, replace `assets/cv/Ahmed-Raza-CV.pdf` and keep the same file name.
-- Facebook and TikTok icons still point to the Contact section. Replace the `href` of those icons in `index.html` with your profile links when you have them.
