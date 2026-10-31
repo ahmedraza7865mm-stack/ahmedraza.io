@@ -10,6 +10,7 @@ js/main.js          page scripts (counters, animations, menu, working hours)
 js/loader.js        battery loading screen
 js/eyes.js          eyes that follow the cursor
 js/fx.js            cursor circle and moving hero background
+js/dino.js          small spinning dino in the corner
 assets/images/      photo, logo and project screenshots
 assets/video/       showreel video
 robots.txt, sitemap.xml  for search engines

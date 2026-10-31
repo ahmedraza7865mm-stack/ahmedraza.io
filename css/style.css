@@ -459,3 +459,7 @@ textarea{min-height:110px}
   .fip[style*="top:12%"][style*="right"]{display:none}
 }
 @media (prefers-reduced-motion: reduce){.fi,.heart svg,.bell svg,.chat circle,.f8 .draw{animation:none!important}.f8 .draw{stroke-dashoffset:0}}
+
+/* Small spinning dino (bottom-right corner) */
+#dino{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:max(6px,env(safe-area-inset-bottom,0px));width:112px;height:112px;z-index:30;cursor:pointer;filter:drop-shadow(0 10px 18px rgba(0,0,0,.4));animation:eyesIn .8s cubic-bezier(.34,1.56,.64,1) 3s backwards;-webkit-tap-highlight-color:transparent}
+@media (max-width:640px){#dino{width:88px;height:88px}}
