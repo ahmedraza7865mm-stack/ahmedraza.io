@@ -8,6 +8,7 @@ index.html          main page
 css/style.css       all styles
 js/main.js          page scripts (counters, animations, menu, working hours)
 js/loader.js        battery loading screen
+js/eyes.js          eyes that follow the cursor
 assets/images/      photo, logo and project screenshots
 assets/video/       showreel video
 assets/cv/          Ahmed-Raza-CV.pdf (the Download CV button)
