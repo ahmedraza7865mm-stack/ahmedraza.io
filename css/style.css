@@ -409,3 +409,53 @@ textarea{min-height:110px}
 .cdot{position:fixed;left:0;top:0;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--accent-text);pointer-events:none;z-index:1001;opacity:0;transition:opacity .3s;will-change:transform}
 .cdot.on{opacity:1}
 @media (hover:none),(pointer:coarse){.cring,.cdot{display:none}}
+
+/* Hero v2: copy on the left, cut-out photo with moving icons on the right */
+.hero{padding-block:56px 0}
+.hero-bg svg g{display:none}
+.hero .wrap.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:end;gap:20px;text-align:left}
+.hero p.lead{max-width:500px}
+.hero-copy{display:flex;flex-direction:column;align-items:flex-start;gap:22px;padding-bottom:64px;align-self:center}
+.hero .cta{justify-content:flex-start}
+.hero .hero-stats{justify-content:flex-start;gap:12px;margin-top:14px}
+.hero .stat{min-width:0;flex:1 1 130px;padding:16px 18px}
+.hero .stat strong{font-size:38px}
+.bi{display:inline-flex;margin-left:12px}
+.btn-solid .bi{margin-right:-8px}
+.hero-art{position:relative;min-height:560px;align-self:end}
+.art-glow{position:absolute;left:8%;right:-6%;bottom:-8%;height:92%;background:radial-gradient(closest-side,rgba(127,168,138,.34),rgba(127,168,138,.1) 55%,transparent 75%);filter:blur(6px)}
+.hero-person{position:absolute;right:-7%;bottom:-1px;width:106%;height:auto;display:block;-webkit-mask-image:linear-gradient(#000 88%,transparent);mask-image:linear-gradient(#000 88%,transparent);filter:drop-shadow(0 18px 40px rgba(0,0,0,.45))}
+.fip{position:absolute;z-index:2;transform:translate3d(calc(var(--px,0px)*var(--d,1)*-1),calc(var(--py,0px)*var(--d,1)*-1),0);transition:transform .5s ease-out}
+.fi{color:var(--accent-text);filter:drop-shadow(0 0 10px rgba(127,168,138,.45));display:flex;align-items:center;gap:10px;animation:fiFloat 6s ease-in-out infinite alternate}
+.fi svg{display:block;overflow:visible}
+.f1{animation-duration:5s}.f2{animation-duration:6.5s;animation-delay:-1s}.f3{animation-duration:7s;animation-delay:-2s}
+.f4{animation-duration:5.5s;animation-delay:-3s}.f5{animation-duration:6s;animation-delay:-1.5s}.f6{animation-duration:8s;animation-delay:-2.5s}
+.f7{animation-duration:6.8s;animation-delay:-4s}.f8{animation-duration:7.4s;animation-delay:-3.5s}.f9{animation-duration:5.2s;animation-delay:-.5s}
+@keyframes fiFloat{from{translate:0 0;rotate:-2deg}to{translate:0 -18px;rotate:3deg}}
+.heart b{font-family:var(--display);font-size:24px;color:var(--accent-text)}
+.heart svg{animation:hbeat 1.6s ease-in-out infinite;transform-origin:50% 55%}
+@keyframes hbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.16)}30%{transform:scale(1)}45%{transform:scale(1.1)}}
+.bell svg{animation:ring 3.2s ease-in-out infinite;transform-origin:50% 12%}
+@keyframes ring{0%,60%,100%{transform:rotate(0)}66%{transform:rotate(14deg)}72%{transform:rotate(-12deg)}78%{transform:rotate(9deg)}84%{transform:rotate(-6deg)}90%{transform:rotate(0)}}
+.chat .td1,.chat .td2,.chat .td3{animation:tdot 1.2s ease-in-out infinite}
+.chat .td2{animation-delay:.2s}.chat .td3{animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.f8 .draw{stroke-dasharray:190;stroke-dashoffset:190;animation:draw 4s ease-in-out infinite}
+@keyframes draw{0%{stroke-dashoffset:190}55%,100%{stroke-dashoffset:0}}
+.seo{border:2px solid var(--accent);border-radius:999px;padding:8px 16px;background:rgba(14,19,15,.55);font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.04em}
+.f2 svg,.f1 svg,.f5 svg,.f7 svg{opacity:.95}
+@media (max-width:980px){
+  .hero{padding-block:40px 0}
+  .hero .wrap.hero-grid{grid-template-columns:minmax(0,1fr);text-align:center;gap:0}
+  .hero-copy{align-items:center;padding-bottom:20px}
+  .hero .cta,.hero .hero-stats{justify-content:center}
+  .hero-art{min-height:0;height:min(92vw,520px);width:min(100%,520px);margin-inline:auto}
+  .hero-person{right:auto;left:50%;transform:translateX(-50%);width:84%}
+  .fip{transform:none}
+  .f1,.f5{display:none}
+}
+@media (max-width:560px){
+  .fi svg{max-width:60px;height:auto}.f6 svg{max-width:100px}.f3 svg{max-width:70px}.heart b{font-size:18px}.seo{font-size:15px;padding:6px 12px}
+  .fip[style*="top:12%"][style*="right"]{display:none}
+}
+@media (prefers-reduced-motion: reduce){.fi,.heart svg,.bell svg,.chat circle,.f8 .draw{animation:none!important}.f8 .draw{stroke-dashoffset:0}}

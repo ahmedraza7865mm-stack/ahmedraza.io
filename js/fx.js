@@ -1,7 +1,7 @@
 /* Hero background follows the mouse a little; a circle trails the cursor */
 (function(){
   var fine=window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches;
-  var hb=document.querySelector('.hero-bg');
+  var hb=document.querySelector('.hero');
   var ring=document.getElementById('cring'),dot=document.getElementById('cdot');
   var x=-100,y=-100,rx=-100,ry=-100,run=false,px=0,py=0;
   function tick(){

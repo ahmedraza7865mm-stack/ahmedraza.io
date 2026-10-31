@@ -12,6 +12,7 @@ js/eyes.js          eyes that follow the cursor
 js/fx.js            cursor circle and moving hero background
 assets/images/      photo, logo and project screenshots
 assets/video/       showreel video
+robots.txt, sitemap.xml  for search engines
 assets/cv/          Ahmed-Raza-CV.pdf (the Download CV button)
 ```
 

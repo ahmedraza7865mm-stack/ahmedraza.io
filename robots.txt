@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ahmedraza7865mm-stack.github.io/ahmedraza.io/sitemap.xml
