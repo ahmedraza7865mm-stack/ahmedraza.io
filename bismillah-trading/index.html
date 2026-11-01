@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bismillah Trading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: header with the Bismillah Trading crescent logo and Add button, a five-tile summary strip that mirrors the client's spreadsheet (Total Invested, Deposits, Withdrawals, Current Value, Net Profit / Loss), a search and status bar, then a grid of client cards. Forms open in a slide-up sheet. Palette: deep teal-black with gold, profit green and loss red; figures in mono. */
+:root {
+  --bg: #edf2ef;
+  --surface: #ffffff;
+  --surface-2: #e2eae6;
+  --fg: #0f1a1a;
+  --muted: #586864;
+  --line: #d2dcd7;
+  --accent: #c99a1c;
+  --accent-soft: #f6ebc3;
+  --accent-fg: #1a1405;
+  --profit: #12803f;
+  --profit-soft: #d9f2e3;
+  --loss: #c42b2b;
+  --loss-soft: #fbe0de;
+  --shadow: 0 8px 26px rgba(15, 26, 26, 0.08);
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1414; --surface: #112020; --surface-2: #162a29; --fg: #f3efe2; --muted: #9bb0aa; --line: #25403d;
+    --accent: #e3bf55; --accent-soft: #3a3214; --accent-fg: #1a1405;
+    --profit: #34d399; --profit-soft: #0f3326; --loss: #f87171; --loss-soft: #3a1a1a;
+    --shadow: 0 8px 26px rgba(0, 0, 0, 0.4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1414; --surface: #112020; --surface-2: #162a29; --fg: #f3efe2; --muted: #9bb0aa; --line: #25403d;
+  --accent: #e3bf55; --accent-soft: #3a3214; --accent-fg: #1a1405;
+  --profit: #34d399; --profit-soft: #0f3326; --loss: #f87171; --loss-soft: #3a1a1a;
+  --shadow: 0 8px 26px rgba(0, 0, 0, 0.4); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-block: 22px 70px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(19px, 5vw, 25px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+h1 small { display: block; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.2em; font-weight: 700; color: var(--accent); margin-top: 4px; }
+h2 { font-size: 17px; font-weight: 700; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.pos { color: var(--profit); } .neg { color: var(--loss); }
+select, input, button, textarea { font: inherit; color: inherit; }
+input[type="text"], input[type="email"], input[type="number"], select, textarea {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%; min-width: 0;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.rise { animation: rise .5s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d, 0s); }
+
+header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.logo { width: 50px; height: 50px; flex: none; filter: drop-shadow(0 6px 14px rgba(201, 154, 28, 0.25)); }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 10px; padding: 11px 18px; min-height: 44px; font-weight: 700; cursor: pointer; transition: transform .15s, filter .2s; }
+.btn:hover { filter: brightness(1.07); }
+.btn:active { transform: scale(0.97); }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); font-weight: 500; }
+.btn.small { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+.btn.danger { background: transparent; color: var(--loss); border: 1px solid var(--line); font-weight: 500; }
+
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; box-shadow: var(--shadow); }
+.tile .v { font-family: var(--font-mono); font-size: clamp(16px, 2.3vw, 21px); font-weight: 500; overflow-wrap: anywhere; }
+.tile .cap { font-size: 12px; color: var(--muted); }
+.tile.main { background: #0f1a1a; color: #f3efe2; border-color: #25403d; }
+.tile.main .label, .tile.main .cap { color: inherit; opacity: 0.72; }
+.tile.main .v.pos { color: #34d399; } .tile.main .v.neg { color: #f87171; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tile.main { grid-column: 1 / -1; } }
+
+.bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.bar .search { flex: 1 1 220px; }
+.bar select { width: auto; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { background: transparent; border: 0; border-radius: 8px; padding: 8px 14px; min-height: 38px; font-weight: 700; font-size: 13px; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); }
+.section-title { font-size: 12px; letter-spacing: 0.12em; font-weight: 700; color: var(--accent); margin: 0; }
+
+.example-note { background: var(--accent-soft); border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hint { font-size: 12px; color: var(--muted); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 14px; }
+.acct { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; box-shadow: var(--shadow); animation: rise .45s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 50ms); }
+.acct.off { opacity: 0.78; }
+.a-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.a-top > div { min-width: 0; }
+.a-name { font-family: var(--font-display); font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+.a-mail { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.pill { border: 0; border-radius: 999px; padding: 5px 12px 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill.on { background: var(--profit-soft); color: var(--profit); }
+.pill.off { background: var(--surface-2); color: var(--muted); }
+.a-amt .label { display: block; }
+.a-amt .big { font-family: var(--font-mono); font-size: 26px; font-weight: 500; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.a-amt .ret { font-size: 13px; font-family: var(--font-mono); margin-left: 8px; }
+.pl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pl > div { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.pl .v { font-family: var(--font-mono); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; display: block; }
+.pl .p { background: var(--profit-soft); } .pl .l { background: var(--loss-soft); }
+.flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 12px; color: var(--muted); }
+.flow b { display: block; font-family: var(--font-mono); font-weight: 500; font-size: 13px; color: var(--fg); overflow-wrap: anywhere; }
+.strat { font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+.strat .id { font-family: var(--font-mono); background: var(--surface-2); padding: 4px 8px; border-radius: 6px; align-self: flex-start; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.idchip { font-family: var(--font-mono); font-size: 12px; }
+.chip { background: var(--accent-soft); color: var(--fg); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.chip button { background: transparent; border: 0; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--muted); min-width: 22px; min-height: 22px; }
+.a-actions { display: flex; gap: 8px; margin-top: auto; }
+.a-actions .btn { flex: 1; }
+.empty { color: var(--muted); padding: 28px 8px; text-align: center; grid-column: 1 / -1; }
+
+.overlay { position: fixed; inset: 0; background: rgba(5, 10, 10, 0.6); z-index: 30; display: flex; align-items: flex-end; justify-content: center; animation: fade .2s both; }
+.sheet { background: var(--surface); width: 100%; max-width: 580px; max-height: calc(100% - 24px); overflow-y: auto; border-radius: 20px 20px 0 0; padding: 20px max(16px, env(safe-area-inset-left, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)); animation: sheetUp .3s cubic-bezier(.2, .7, .2, 1) both; }
+@media (min-width: 640px) { .overlay { align-items: center; } .sheet { border-radius: 20px; padding-inline: 24px; } }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.x { background: transparent; border: 1px solid var(--line); border-radius: 10px; width: 40px; height: 40px; font-size: 20px; cursor: pointer; color: var(--muted); }
+form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+form .full { grid-column: 1 / -1; }
+form label, .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; min-width: 0; }
+.row-add { display: flex; gap: 8px; }
+.preview { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.err { color: var(--loss); font-size: 13px; min-height: 1.2em; margin: 0; }
+.sheet-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.sheet-actions .btn:first-child { flex: 1 1 160px; }
+textarea { min-height: 120px; font-family: var(--font-mono); font-size: 12px; resize: vertical; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 11px 18px; border-radius: 12px; display: flex; gap: 14px; align-items: center; font-size: 14px; z-index: 40; max-width: calc(100% - 32px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3); }
+.toast button { background: transparent; border: 0; color: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; min-height: 36px; }
+@media (max-width: 420px) { form { grid-template-columns: 1fr; } .pl { grid-template-columns: 1fr 1fr; } .pl > div:last-child { grid-column: 1 / -1; } .flow { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<meta name="description" content="Bismillah Trading: track client copy-trade accounts, deposits, withdrawals, profit, loss and status.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1a1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bismillah Trading">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="rise">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="Bismillah Trading logo">
+        <defs>
+          <linearGradient id="lgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6dd85"/><stop offset="1" stop-color="#b88a2a"/></linearGradient>
+          <mask id="lgm"><rect width="64" height="64" fill="#fff"/><circle cx="38" cy="28" r="15" fill="#000"/></mask>
+        </defs>
+        <rect width="64" height="64" rx="16" fill="#0f1a1a" stroke="#e3bf55" stroke-width="1.5"/>
+        <circle cx="30" cy="30" r="19" fill="url(#lgg)" mask="url(#lgm)"/>
+        <path d="M13 50 L26 40 L34 45 L53 23" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M43 23 L53 23 L53 33" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>Bismillah Trading<small>COPY TRADE TRACKER</small></h1>
+    </div>
+    <div class="head-actions">
+      <select id="currency" aria-label="Currency" style="width:auto">
+        <option value="$">USD ($)</option><option value="Rs. ">PKR (Rs.)</option><option value="€">EUR (€)</option><option value="£">GBP (£)</option>
+      </select>
+      <button class="btn ghost" id="backupBtn" type="button">Backup</button>
+      <button class="btn" id="addBtn" type="button">+ Add client</button>
+    </div>
+  </header>
+
+  <section class="stats rise" style="--d:.06s" aria-label="Summary">
+    <div class="tile main"><span class="label">Net profit / loss</span><span class="v" id="sNet">0</span><span class="cap" id="sRet"></span></div>
+    <div class="tile"><span class="label">Total invested</span><span class="v" id="sIni">0</span><span class="cap">Initial capital deployed</span></div>
+    <div class="tile"><span class="label">Total deposits</span><span class="v" id="sDep">0</span><span class="cap">Cumulative additions</span></div>
+    <div class="tile"><span class="label">Total withdrawals</span><span class="v" id="sWd">0</span><span class="cap">Realized payouts</span></div>
+    <div class="tile"><span class="label">Current value</span><span class="v" id="sCv">0</span><span class="cap" id="sCnt">Live portfolio equity</span></div>
+  </section>
+
+  <h2 class="section-title rise" style="--d:.1s">ACTIVE CLIENT COPY POSITIONS</h2>
+  <div class="bar rise" style="--d:.12s">
+    <input class="search" id="search" type="text" placeholder="Search name, email, master trader or ID" aria-label="Search clients">
+    <div class="seg" role="group" aria-label="Status filter">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="active" aria-pressed="false">Active</button>
+      <button type="button" data-f="inactive" aria-pressed="false">Inactive</button>
+    </div>
+  </div>
+
+  <div class="example-note" id="exampleNote" hidden>
+    <span>The clients below are examples. Clear them before adding your own.</span>
+    <button class="btn ghost small" id="clearExamples" type="button">Clear examples</button>
+  </div>
+
+  <section class="grid" id="grid" aria-label="Clients"></section>
+  <p class="hint">Net P/L = Current Value + Withdrawals - (Initial + Deposits). Profit and Loss are worked out from it, so you only enter the money figures.</p>
+</div>
+
+<div class="overlay" id="formOv" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <div class="sheet-head"><h2 id="formTitle">Add client</h2><button class="x" type="button" id="formClose" aria-label="Close">&times;</button></div>
+    <form id="form" novalidate>
+      <label for="fName">Client name<input id="fName" type="text" maxlength="50" placeholder="e.g. Ahmed Raza"></label>
+      <label for="fEmail">Email<input id="fEmail" type="email" maxlength="80" placeholder="name@example.com"></label>
+      <label for="fMaster">Master trader<input id="fMaster" type="text" maxlength="50" placeholder="Master trader name"></label>
+      <label for="fStatus">Status<select id="fStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+      <div class="field full">
+        <label for="fTrader" style="gap:6px">Copy Trade ID / Strategy (max 5) <span class="hint" id="tCount">0 of 5</span></label>
+        <div class="row-add">
+          <input id="fTrader" type="text" maxlength="60" placeholder="Type an ID or strategy, then press Add">
+          <button class="btn ghost" id="tAdd" type="button">Add</button>
+        </div>
+        <div class="chips" id="fChips"></div>
+      </div>
+      <label for="fIni">Initial investment<input id="fIni" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
+      <label for="fDep">Deposits<input id="fDep" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
+      <label for="fWd">Withdrawals<input id="fWd" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
+      <label for="fCv">Current value<input id="fCv" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
+      <div class="preview full num" id="preview" aria-live="polite"></div>
+      <p class="err full" id="err" role="alert"></p>
+      <div class="sheet-actions full">
+        <button class="btn" id="saveBtn" type="submit">Save client</button>
+        <button class="btn ghost" id="cancelBtn" type="button">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="bkOv" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+    <div class="sheet-head"><h2 id="bkTitle">Backup and restore</h2><button class="x" type="button" id="bkClose" aria-label="Close">&times;</button></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <p class="hint" style="margin:0">Copy the text below and keep it safe (a WhatsApp note to yourself works). To move to another phone, paste it into this box there and press Restore.</p>
+      <textarea id="bkText" aria-label="Backup text" spellcheck="false"></textarea>
+      <p class="hint" id="bkMsg" role="status"></p>
+      <div class="sheet-actions">
+        <button class="btn" id="bkCopy" type="button">Copy backup</button>
+        <button class="btn ghost" id="bkRestore" type="button">Restore from text</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button type="button" id="undo">Undo</button></div>
+
+<script>
+(function () {
+  var KEY = "bismillahTrading.v1", MAXT = 5;
+  var state = { currency: "$", accounts: [] };
+  var filter = "all", query = "", editingId = null, formTraders = [], lastDeleted = null, toastTimer = null, restoreArmed = false;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; }
+  function safeId(v) { return String(v || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40); }
+  function idsOf(a) {
+    var raw = Array.isArray(a.ids) ? a.ids : [a.strat].concat(Array.isArray(a.traders) ? a.traders : []);
+    var out = [];
+    raw.forEach(function (v) { v = String(v == null ? "" : v).trim().slice(0, 60); if (v && out.indexOf(v) < 0 && out.length < MAXT) out.push(v); });
+    return out;
+  }
+  function clean(a, i) {
+    return { id: safeId(a.id) || "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + i, example: !!a.example,
+      name: String(a.name || "Unnamed").slice(0, 50), email: String(a.email || "").slice(0, 80), master: String(a.master || "").slice(0, 50),
+      ids: idsOf(a),
+      ini: num(a.ini), dep: num(a.dep), wd: num(a.wd), cv: num(a.cv), status: a.status === "inactive" ? "inactive" : "active" };
+  }
+  function calc(a) { var inv = a.ini + a.dep, net = a.cv + a.wd - inv; return { inv: inv, net: net, ret: inv ? net / inv * 100 : 0 }; }
+
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) {}
+    if (raw) {
+      try {
+        var s = JSON.parse(raw);
+        if (s && Array.isArray(s.accounts)) { state = { currency: typeof s.currency === "string" ? s.currency : "$", accounts: s.accounts.filter(function (x) { return x && typeof x === "object"; }).map(clean) }; return; }
+      } catch (e) {}
+    }
+    seed();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function seed() {
+    state = { currency: "$", accounts: [
+      { id: "ex1", example: true, name: "Sample Client A", email: "client.a@example.com", master: "Master Trader One", ids: ["CT-10428", "Gold Scalper"], ini: 4000, dep: 500, wd: 300, cv: 5200, status: "active" },
+      { id: "ex2", example: true, name: "Sample Client B", email: "client.b@example.com", master: "Master Trader Two", ids: ["CT-20931 Swing Basket"], ini: 2000, dep: 0, wd: 0, cv: 1760, status: "active" },
+      { id: "ex3", example: true, name: "Sample Client C", email: "client.c@example.com", master: "", ids: ["CT-33177"], ini: 1000, dep: 0, wd: 100, cv: 950, status: "inactive" }
+    ].map(clean) };
+  }
+
+  function money(n, sign) {
+    var c = state.currency || "$", a = Math.abs(n);
+    return (n < 0 ? "-" : (sign && n > 0 ? "+" : "")) + c + a.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function plClass(n) { return n > 0 ? "pos" : (n < 0 ? "neg" : ""); }
+
+  function visible() {
+    var q = query.trim().toLowerCase();
+    return state.accounts.filter(function (a) {
+      if (filter !== "all" && a.status !== filter) return false;
+      return !q || (a.name + " " + a.email + " " + a.master + " " + a.ids.join(" ")).toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function renderStats() {
+    var T = { ini: 0, dep: 0, wd: 0, cv: 0 }, act = 0;
+    state.accounts.forEach(function (a) { T.ini += a.ini; T.dep += a.dep; T.wd += a.wd; T.cv += a.cv; if (a.status === "active") act++; });
+    var inv = T.ini + T.dep, net = T.cv + T.wd - inv, ret = inv ? net / inv * 100 : 0;
+    var n = $("sNet"); n.textContent = money(net, true); n.className = "v " + plClass(net);
+    $("sRet").textContent = "Return: " + ret.toFixed(1) + "%";
+    $("sIni").textContent = money(T.ini); $("sDep").textContent = money(T.dep); $("sWd").textContent = money(T.wd); $("sCv").textContent = money(T.cv);
+    $("sCnt").textContent = state.accounts.length + (state.accounts.length === 1 ? " client" : " clients") + " (" + act + " active)";
+  }
+
+  function render() {
+    $("currency").value = state.currency || "$";
+    renderStats();
+    $("exampleNote").hidden = !state.accounts.some(function (a) { return a.example; });
+    var grid = $("grid"); grid.innerHTML = "";
+    var list = visible();
+    if (!list.length) { grid.appendChild(el("p", "empty", state.accounts.length ? "No clients match your search or filter." : "No clients yet. Press + Add client to create the first one.")); return; }
+    list.forEach(function (a, i) {
+      var c = calc(a), profit = Math.max(c.net, 0), loss = Math.max(-c.net, 0);
+      var card = el("article", "acct" + (a.status === "inactive" ? " off" : "")); card.style.setProperty("--i", Math.min(i, 8));
+      var top = el("div", "a-top"), who = el("div");
+      who.appendChild(el("div", "a-name", a.name)); who.appendChild(el("div", "a-mail", a.email || "No email"));
+      var pill = el("button", "pill " + (a.status === "active" ? "on" : "off"), a.status === "active" ? "Active" : "Inactive");
+      pill.type = "button"; pill.setAttribute("aria-label", "Status " + a.status + ". Press to switch.");
+      pill.addEventListener("click", function () { a.status = a.status === "active" ? "inactive" : "active"; save(); render(); });
+      top.appendChild(who); top.appendChild(pill); card.appendChild(top);
+
+      var amt = el("div", "a-amt"); amt.appendChild(el("span", "label", "Current value"));
+      var big = el("span", "big", money(a.cv)); amt.appendChild(big);
+      amt.appendChild(el("span", "ret " + plClass(c.net), (c.ret >= 0 ? "+" : "") + c.ret.toFixed(1) + "%")); card.appendChild(amt);
+
+      var pl = el("div", "pl");
+      [["p", "Profit", money(profit), profit > 0 ? "pos" : ""], ["l", "Loss", money(loss), loss > 0 ? "neg" : ""], ["", "Net P/L", money(c.net, true), plClass(c.net)]].forEach(function (r) {
+        var d = el("div", r[0]); d.appendChild(el("span", "label", r[1])); d.appendChild(el("span", "v " + r[3], r[2])); pl.appendChild(d);
+      });
+      card.appendChild(pl);
+
+      var flow = el("div", "flow");
+      [["Initial", a.ini], ["Deposits", a.dep], ["Withdrawals", a.wd]].forEach(function (r) {
+        var d = el("div"); d.appendChild(document.createTextNode(r[0])); d.appendChild(el("b", "", money(r[1]))); flow.appendChild(d);
+      });
+      card.appendChild(flow);
+
+      var st = el("div", "strat");
+      st.appendChild(el("span", "label", "Master trader")); st.appendChild(el("span", "", a.master || "Not set"));
+      st.appendChild(el("span", "label", "Copy Trade ID / Strategy (" + a.ids.length + "/" + MAXT + ")"));
+      var ch = el("div", "chips");
+      if (!a.ids.length) ch.appendChild(el("span", "hint", "Not set"));
+      a.ids.forEach(function (t) { ch.appendChild(el("span", "chip idchip", t)); });
+      st.appendChild(ch); card.appendChild(st);
+
+      var act = el("div", "a-actions");
+      var ed = el("button", "btn ghost small", "Edit"); ed.type = "button"; ed.addEventListener("click", function () { openForm(a.id); });
+      var del = el("button", "btn danger small", "Delete"); del.type = "button"; del.addEventListener("click", function () { removeAcct(a.id); });
+      act.appendChild(ed); act.appendChild(del); card.appendChild(act);
+      grid.appendChild(card);
+    });
+  }
+
+  function showToast(msg, undo) {
+    $("toastMsg").textContent = msg; $("undo").hidden = !undo; $("toast").hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { $("toast").hidden = true; lastDeleted = null; }, 5000);
+  }
+  function removeAcct(id) {
+    var i = state.accounts.findIndex(function (a) { return a.id === id; }); if (i < 0) return;
+    lastDeleted = { a: state.accounts[i], i: i }; state.accounts.splice(i, 1); save(); render(); showToast("Client deleted.", true);
+  }
+  $("undo").addEventListener("click", function () {
+    if (!lastDeleted) return; state.accounts.splice(lastDeleted.i, 0, lastDeleted.a); lastDeleted = null; save(); render(); $("toast").hidden = true;
+  });
+
+  function renderChips() {
+    var box = $("fChips"); box.innerHTML = "";
+    formTraders.forEach(function (t, i) {
+      var c = el("span", "chip", t), x = el("button", "", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + t);
+      x.addEventListener("click", function () { formTraders.splice(i, 1); renderChips(); });
+      c.appendChild(x); box.appendChild(c);
+    });
+    $("tCount").textContent = formTraders.length + " of " + MAXT;
+    var full = formTraders.length >= MAXT;
+    $("tAdd").disabled = full; $("fTrader").disabled = full;
+    $("fTrader").placeholder = full ? "Limit reached (5 IDs)" : "Type an ID or strategy, then press Add";
+  }
+  function addTrader() {
+    var v = $("fTrader").value.trim(); if (!v) return;
+    if (formTraders.length >= MAXT) { $("err").textContent = "You can add at most 5 IDs."; return; }
+    if (formTraders.some(function (t) { return t.toLowerCase() === v.toLowerCase(); })) { $("err").textContent = "That ID is already added."; return; }
+    $("err").textContent = ""; formTraders.push(v); $("fTrader").value = ""; renderChips(); $("fTrader").focus();
+  }
+  $("tAdd").addEventListener("click", addTrader);
+  $("fTrader").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addTrader(); } });
+
+  function updatePreview() {
+    var ini = num($("fIni").value), dep = num($("fDep").value), wd = num($("fWd").value), cv = num($("fCv").value);
+    var inv = ini + dep, net = cv + wd - inv, ret = inv ? net / inv * 100 : 0;
+    $("preview").textContent = "Total put in " + money(inv) + "  |  Net P/L " + money(net, true) + " (" + (net >= 0 ? "profit" : "loss") + ")  |  Return " + ret.toFixed(1) + "%";
+  }
+  ["fIni", "fDep", "fWd", "fCv"].forEach(function (id) { $(id).addEventListener("input", updatePreview); });
+
+  function openForm(id) {
+    editingId = id || null;
+    var a = id ? state.accounts.find(function (x) { return x.id === id; }) : null;
+    $("formTitle").textContent = a ? "Edit client" : "Add client"; $("saveBtn").textContent = a ? "Update client" : "Save client";
+    $("fName").value = a ? a.name : ""; $("fEmail").value = a ? a.email : ""; $("fMaster").value = a ? a.master : "";
+    $("fStatus").value = a ? a.status : "active";
+    $("fIni").value = a && a.ini ? a.ini : ""; $("fDep").value = a && a.dep ? a.dep : ""; $("fWd").value = a && a.wd ? a.wd : ""; $("fCv").value = a && a.cv ? a.cv : "";
+    formTraders = a ? a.ids.slice() : []; $("fTrader").value = ""; $("err").textContent = ""; renderChips(); updatePreview();
+    $("formOv").hidden = false; $("fName").focus();
+  }
+  function closeForm() { $("formOv").hidden = true; editingId = null; }
+  $("addBtn").addEventListener("click", function () { openForm(null); });
+  $("formClose").addEventListener("click", closeForm); $("cancelBtn").addEventListener("click", closeForm);
+  $("formOv").addEventListener("click", function (e) { if (e.target === $("formOv")) closeForm(); });
+
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var name = $("fName").value.trim(), email = $("fEmail").value.trim();
+    if (!name) { $("err").textContent = "Enter the client name."; $("fName").focus(); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("err").textContent = "Enter a valid email or leave it empty."; $("fEmail").focus(); return; }
+    var ids = ["fIni", "fDep", "fWd", "fCv"];
+    for (var i = 0; i < ids.length; i++) { var v = $(ids[i]).value; if (v !== "" && !(Number(v) >= 0)) { $("err").textContent = "Amounts cannot be negative."; $(ids[i]).focus(); return; } }
+    var pending = $("fTrader").value.trim();
+    if (pending && formTraders.length < MAXT && !formTraders.some(function (t) { return t.toLowerCase() === pending.toLowerCase(); })) formTraders.push(pending);
+    var data = { name: name, email: email, master: $("fMaster").value.trim(), ids: formTraders.slice(0, MAXT),
+      ini: num($("fIni").value), dep: num($("fDep").value), wd: num($("fWd").value), cv: num($("fCv").value), status: $("fStatus").value };
+    var msg;
+    if (editingId) { var a = state.accounts.find(function (x) { return x.id === editingId; }); if (a) { for (var k in data) a[k] = data[k]; a.example = false; } msg = "Client updated."; }
+    else { data.id = "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); state.accounts.unshift(clean(data, 0)); msg = "Client saved."; }
+    save(); closeForm(); render(); showToast(msg, false);
+  });
+
+  $("search").addEventListener("input", function () { query = $("search").value; render(); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+    b.addEventListener("click", function () {
+      filter = b.getAttribute("data-f");
+      Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      render();
+    });
+  });
+  $("currency").addEventListener("change", function () { state.currency = $("currency").value; save(); render(); });
+  $("clearExamples").addEventListener("click", function () { state.accounts = state.accounts.filter(function (a) { return !a.example; }); save(); render(); });
+
+  // Backup and restore
+  function closeBackup() { $("bkOv").hidden = true; restoreArmed = false; $("bkRestore").textContent = "Restore from text"; }
+  $("backupBtn").addEventListener("click", function () { $("bkText").value = JSON.stringify(state); $("bkMsg").textContent = ""; $("bkOv").hidden = false; });
+  $("bkClose").addEventListener("click", closeBackup);
+  $("bkOv").addEventListener("click", function (e) { if (e.target === $("bkOv")) closeBackup(); });
+  $("bkCopy").addEventListener("click", function () {
+    var t = $("bkText"); t.value = JSON.stringify(state);
+    function fallback() { t.focus(); t.select(); $("bkMsg").textContent = "Text selected. Press and hold, then choose Copy."; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(function () { $("bkMsg").textContent = "Backup copied."; }, fallback); else fallback();
+  });
+  $("bkRestore").addEventListener("click", function () {
+    var s;
+    try { s = JSON.parse($("bkText").value); if (!s || !Array.isArray(s.accounts)) throw new Error("bad"); }
+    catch (e) { $("bkMsg").textContent = "That text is not a valid backup. Paste the full backup text and try again."; return; }
+    if (!restoreArmed) { restoreArmed = true; $("bkRestore").textContent = "Tap again to replace all data"; $("bkMsg").textContent = "This replaces everything currently in the app."; return; }
+    state = { currency: typeof s.currency === "string" ? s.currency : "$", accounts: s.accounts.filter(function (x) { return x && typeof x === "object"; }).map(clean) };
+    save(); render(); restoreArmed = false; $("bkRestore").textContent = "Restore from text"; $("bkMsg").textContent = "Restored " + state.accounts.length + " clients.";
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("formOv").hidden) closeForm(); if (!$("bkOv").hidden) closeBackup(); } });
+
+  load(); render();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+}
+</script>
+</body>
+</html>
