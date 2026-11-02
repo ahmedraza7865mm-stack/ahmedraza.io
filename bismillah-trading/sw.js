@@ -1,5 +1,5 @@
 // Network first: new versions show right after upload. The saved copy is used only when offline.
-var CACHE = "bismillah-trading-v2";
+var CACHE = "bismillah-trading-v3";
 var FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));

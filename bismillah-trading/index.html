@@ -147,6 +147,32 @@ textarea { min-height: 120px; font-family: var(--font-mono); font-size: 12px; re
 .toast button { background: transparent; border: 0; color: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; min-height: 36px; }
 @media (max-width: 420px) { form { grid-template-columns: 1fr; } .pl { grid-template-columns: 1fr 1fr; } .pl > div:last-child { grid-column: 1 / -1; } .flow { grid-template-columns: 1fr 1fr; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+/* ledger additions */
+.types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.types button { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-height: 44px; padding: 8px 6px; font-weight: 700; font-size: 13px; cursor: pointer; color: var(--muted); }
+.types button[aria-pressed="true"] { color: var(--accent-fg); border-color: transparent; }
+.types button[data-t="deposit"][aria-pressed="true"] { background: var(--profit); color: #06210f; }
+.types button[data-t="profit"][aria-pressed="true"] { background: var(--profit); color: #06210f; }
+.types button[data-t="withdrawal"][aria-pressed="true"] { background: #e0a43a; color: #2a1c02; }
+.types button[data-t="loss"][aria-pressed="true"] { background: var(--loss); color: #fff; }
+.types button[data-t="balance"][aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.avail { font-size: 13px; color: var(--muted); }
+.hist { border-top: 1px solid var(--line); padding-top: 10px; font-size: 13px; }
+.hist summary { cursor: pointer; font-weight: 700; color: var(--muted); list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 32px; }
+.hist summary::-webkit-details-marker { display: none; }
+.hist summary::after { content: "+"; font-size: 18px; line-height: 1; }
+.hist[open] summary::after { content: "\2212"; }
+.hist ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; max-height: 230px; overflow-y: auto; }
+.hist li { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+.hist li:first-child { border-top: 0; }
+.hist .d { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.hist .w { min-width: 0; overflow-wrap: anywhere; }
+.hist .w small { display: block; color: var(--muted); font-size: 12px; }
+.hist .a { font-family: var(--font-mono); font-weight: 500; }
+.hist .rm { background: transparent; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; min-width: 32px; min-height: 32px; border-radius: 8px; }
+.hist .rm:hover { color: var(--loss); }
+.hist .none { color: var(--muted); padding: 6px 0; }
+.a-actions .btn.add { flex: 2; }
 </style>
 
 <meta name="description" content="Bismillah Trading: track client copy-trade accounts, deposits, withdrawals, profit, loss and status.">
@@ -190,10 +216,10 @@ body{margin:0}
 
   <section class="stats rise" style="--d:.06s" aria-label="Summary">
     <div class="tile main"><span class="label">Net profit / loss</span><span class="v" id="sNet">0</span><span class="cap" id="sRet"></span></div>
-    <div class="tile"><span class="label">Total invested</span><span class="v" id="sIni">0</span><span class="cap">Initial capital deployed</span></div>
-    <div class="tile"><span class="label">Total deposits</span><span class="v" id="sDep">0</span><span class="cap">Cumulative additions</span></div>
-    <div class="tile"><span class="label">Total withdrawals</span><span class="v" id="sWd">0</span><span class="cap">Realized payouts</span></div>
-    <div class="tile"><span class="label">Current value</span><span class="v" id="sCv">0</span><span class="cap" id="sCnt">Live portfolio equity</span></div>
+    <div class="tile"><span class="label">Total invested</span><span class="v" id="sIni">0</span><span class="cap">Opening capital</span></div>
+    <div class="tile"><span class="label">Total deposits</span><span class="v" id="sDep">0</span><span class="cap">Added later</span></div>
+    <div class="tile"><span class="label">Total withdrawals</span><span class="v" id="sWd">0</span><span class="cap">Taken out</span></div>
+    <div class="tile"><span class="label">Current value</span><span class="v" id="sCv">0</span><span class="cap" id="sCnt">Balance now</span></div>
   </section>
 
   <h2 class="section-title rise" style="--d:.1s">ACTIVE CLIENT COPY POSITIONS</h2>
@@ -212,7 +238,7 @@ body{margin:0}
   </div>
 
   <section class="grid" id="grid" aria-label="Clients"></section>
-  <p class="hint">Net P/L = Current Value + Withdrawals - (Initial + Deposits). Profit and Loss are worked out from it, so you only enter the money figures.</p>
+  <p class="hint">Balance = Opening + Deposits + Profit - Loss - Withdrawals. Press Add entry on a client to record a deposit, a withdrawal, a profit or a loss, and the balance updates by itself.</p>
 </div>
 
 <div class="overlay" id="formOv" hidden>
@@ -223,6 +249,7 @@ body{margin:0}
       <label for="fEmail">Email<input id="fEmail" type="email" maxlength="80" placeholder="name@example.com"></label>
       <label for="fMaster">Master trader<input id="fMaster" type="text" maxlength="50" placeholder="Master trader name"></label>
       <label for="fStatus">Status<select id="fStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+      <label for="fIni" class="full">Opening amount (first investment)<input id="fIni" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
       <div class="field full">
         <label for="fTrader" style="gap:6px">Copy Trade ID / Strategy (max 5) <span class="hint" id="tCount">0 of 5</span></label>
         <div class="row-add">
@@ -231,15 +258,38 @@ body{margin:0}
         </div>
         <div class="chips" id="fChips"></div>
       </div>
-      <label for="fIni">Initial investment<input id="fIni" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
-      <label for="fDep">Deposits<input id="fDep" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
-      <label for="fWd">Withdrawals<input id="fWd" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
-      <label for="fCv">Current value<input id="fCv" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></label>
-      <div class="preview full num" id="preview" aria-live="polite"></div>
+      <p class="hint full" id="formHint" style="margin:0">After saving, use Add entry on the client card for deposits, withdrawals, profit and loss.</p>
       <p class="err full" id="err" role="alert"></p>
       <div class="sheet-actions full">
         <button class="btn" id="saveBtn" type="submit">Save client</button>
         <button class="btn ghost" id="cancelBtn" type="button">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="txOv" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="txTitle">
+    <div class="sheet-head"><h2 id="txTitle">Add entry</h2><button class="x" type="button" id="txClose" aria-label="Close">&times;</button></div>
+    <form id="txForm" novalidate style="display:flex;flex-direction:column;gap:12px">
+      <div class="types" role="group" aria-label="Entry type">
+        <button type="button" data-t="deposit" aria-pressed="true">Deposit</button>
+        <button type="button" data-t="withdrawal" aria-pressed="false">Withdrawal</button>
+        <button type="button" data-t="profit" aria-pressed="false">Profit</button>
+        <button type="button" data-t="loss" aria-pressed="false">Loss</button>
+        <button type="button" data-t="balance" aria-pressed="false">Balance now</button>
+      </div>
+      <p class="avail num" id="txAvail"></p>
+      <label for="txAmount" id="txAmountLabel" style="display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500">Amount
+        <input id="txAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+      </label>
+      <label for="txDate" style="display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500">Date<input id="txDate" type="date"></label>
+      <label for="txNote" style="display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500">Note (optional)<input id="txNote" type="text" maxlength="60" placeholder="e.g. weekly payout"></label>
+      <div class="preview num" id="txPreview" aria-live="polite"></div>
+      <p class="err" id="txErr" role="alert"></p>
+      <div class="sheet-actions">
+        <button class="btn" id="txSave" type="submit">Save entry</button>
+        <button class="btn ghost" id="txCancel" type="button">Cancel</button>
       </div>
     </form>
   </div>
@@ -264,25 +314,58 @@ body{margin:0}
 <script>
 (function () {
   var KEY = "bismillahTrading.v1", MAXT = 5;
+  var TYPES = { deposit: "Deposit", withdrawal: "Withdrawal", profit: "Profit", loss: "Loss" };
   var state = { currency: "$", accounts: [] };
-  var filter = "all", query = "", editingId = null, formTraders = [], lastDeleted = null, toastTimer = null, restoreArmed = false;
+  var filter = "all", query = "", editingId = null, formIds = [], toastTimer = null, restoreArmed = false;
+  var undoFn = null, openHist = {}, txClient = null, txType = "deposit";
   var $ = function (id) { return document.getElementById(id); };
 
-  function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; }
+  function r2(n) { return Math.round(n * 100) / 100; }
+  function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? r2(n) : 0; }
   function safeId(v) { return String(v || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40); }
+  function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  var todayStr = ymd(new Date());
+  function daysAgo(n) { var d = new Date(); d.setDate(d.getDate() - n); return ymd(d); }
+
+  function cleanTx(t) {
+    if (!t || typeof t !== "object" || !TYPES[t.type]) return null;
+    var amt = num(t.amount); if (!(amt > 0)) return null;
+    var date = /^\d{4}-\d{2}-\d{2}$/.test(String(t.date)) ? String(t.date) : todayStr;
+    return { id: safeId(t.id) || uid("t"), type: t.type, amount: amt, date: date, note: String(t.note || "").slice(0, 60) };
+  }
   function idsOf(a) {
     var raw = Array.isArray(a.ids) ? a.ids : [a.strat].concat(Array.isArray(a.traders) ? a.traders : []);
     var out = [];
     raw.forEach(function (v) { v = String(v == null ? "" : v).trim().slice(0, 60); if (v && out.indexOf(v) < 0 && out.length < MAXT) out.push(v); });
     return out;
   }
-  function clean(a, i) {
-    return { id: safeId(a.id) || "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + i, example: !!a.example,
-      name: String(a.name || "Unnamed").slice(0, 50), email: String(a.email || "").slice(0, 80), master: String(a.master || "").slice(0, 50),
-      ids: idsOf(a),
-      ini: num(a.ini), dep: num(a.dep), wd: num(a.wd), cv: num(a.cv), status: a.status === "inactive" ? "inactive" : "active" };
+  // Older versions stored deposits, withdrawals and a current value. Turn them into entries so no number is lost.
+  function legacyTx(a) {
+    var out = [], ini = num(a.ini), dep = num(a.dep), wd = num(a.wd), cv = num(a.cv);
+    if (dep > 0) out.push({ type: "deposit", amount: dep, date: todayStr, note: "From earlier version" });
+    if (wd > 0) out.push({ type: "withdrawal", amount: wd, date: todayStr, note: "From earlier version" });
+    if (a.cv !== undefined) {
+      var diff = r2(cv - ini - dep + wd);
+      if (diff > 0) out.push({ type: "profit", amount: diff, date: todayStr, note: "From earlier version" });
+      else if (diff < 0) out.push({ type: "loss", amount: -diff, date: todayStr, note: "From earlier version" });
+    }
+    return out;
   }
-  function calc(a) { var inv = a.ini + a.dep, net = a.cv + a.wd - inv; return { inv: inv, net: net, ret: inv ? net / inv * 100 : 0 }; }
+  function clean(a, i) {
+    var txs = Array.isArray(a.tx) ? a.tx : legacyTx(a);
+    return { id: safeId(a.id) || uid("a") + i, example: !!a.example,
+      name: String(a.name || "Unnamed").slice(0, 50), email: String(a.email || "").slice(0, 80), master: String(a.master || "").slice(0, 50),
+      ids: idsOf(a), ini: num(a.ini), status: a.status === "inactive" ? "inactive" : "active",
+      tx: txs.map(cleanTx).filter(Boolean) };
+  }
+  function calc(a) {
+    var T = { dep: 0, wd: 0, pr: 0, ls: 0 };
+    a.tx.forEach(function (t) { if (t.type === "deposit") T.dep += t.amount; else if (t.type === "withdrawal") T.wd += t.amount; else if (t.type === "profit") T.pr += t.amount; else T.ls += t.amount; });
+    var inv = r2(a.ini + T.dep), net = r2(T.pr - T.ls), bal = r2(a.ini + T.dep + T.pr - T.ls - T.wd);
+    return { dep: r2(T.dep), wd: r2(T.wd), pr: r2(T.pr), ls: r2(T.ls), inv: inv, net: net, bal: bal, ret: inv ? net / inv * 100 : 0 };
+  }
 
   function load() {
     var raw = null;
@@ -290,7 +373,7 @@ body{margin:0}
     if (raw) {
       try {
         var s = JSON.parse(raw);
-        if (s && Array.isArray(s.accounts)) { state = { currency: typeof s.currency === "string" ? s.currency : "$", accounts: s.accounts.filter(function (x) { return x && typeof x === "object"; }).map(clean) }; return; }
+        if (s && Array.isArray(s.accounts)) { state = { currency: typeof s.currency === "string" ? s.currency : "$", accounts: s.accounts.filter(function (x) { return x && typeof x === "object"; }).map(clean) }; save(); return; }
       } catch (e) {}
     }
     seed();
@@ -298,9 +381,13 @@ body{margin:0}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   function seed() {
     state = { currency: "$", accounts: [
-      { id: "ex1", example: true, name: "Sample Client A", email: "client.a@example.com", master: "Master Trader One", ids: ["CT-10428", "Gold Scalper"], ini: 4000, dep: 500, wd: 300, cv: 5200, status: "active" },
-      { id: "ex2", example: true, name: "Sample Client B", email: "client.b@example.com", master: "Master Trader Two", ids: ["CT-20931 Swing Basket"], ini: 2000, dep: 0, wd: 0, cv: 1760, status: "active" },
-      { id: "ex3", example: true, name: "Sample Client C", email: "client.c@example.com", master: "", ids: ["CT-33177"], ini: 1000, dep: 0, wd: 100, cv: 950, status: "inactive" }
+      { id: "ex1", example: true, name: "Sample Client A", email: "client.a@example.com", master: "Master Trader One", ids: ["CT-10428", "Gold Scalper"], ini: 4000, status: "active", tx: [
+        { type: "deposit", amount: 500, date: daysAgo(20), note: "Top up" }, { type: "profit", amount: 700, date: daysAgo(12), note: "Week 1" },
+        { type: "profit", amount: 300, date: daysAgo(5), note: "Week 2" }, { type: "withdrawal", amount: 300, date: daysAgo(2), note: "Payout" }] },
+      { id: "ex2", example: true, name: "Sample Client B", email: "client.b@example.com", master: "Master Trader Two", ids: ["CT-20931 Swing Basket"], ini: 2000, status: "active", tx: [
+        { type: "loss", amount: 240, date: daysAgo(4), note: "Bad week" }] },
+      { id: "ex3", example: true, name: "Sample Client C", email: "client.c@example.com", master: "", ids: ["CT-33177"], ini: 1000, status: "inactive", tx: [
+        { type: "profit", amount: 50, date: daysAgo(15), note: "" }, { type: "withdrawal", amount: 100, date: daysAgo(9), note: "" }] }
     ].map(clean) };
   }
 
@@ -310,6 +397,8 @@ body{margin:0}
   }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
   function plClass(n) { return n > 0 ? "pos" : (n < 0 ? "neg" : ""); }
+  function dayLabel(d) { var p = d.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+  function find(id) { return state.accounts.find(function (a) { return a.id === id; }); }
 
   function visible() {
     var q = query.trim().toLowerCase();
@@ -320,13 +409,34 @@ body{margin:0}
   }
 
   function renderStats() {
-    var T = { ini: 0, dep: 0, wd: 0, cv: 0 }, act = 0;
-    state.accounts.forEach(function (a) { T.ini += a.ini; T.dep += a.dep; T.wd += a.wd; T.cv += a.cv; if (a.status === "active") act++; });
-    var inv = T.ini + T.dep, net = T.cv + T.wd - inv, ret = inv ? net / inv * 100 : 0;
-    var n = $("sNet"); n.textContent = money(net, true); n.className = "v " + plClass(net);
+    var ini = 0, dep = 0, wd = 0, bal = 0, net = 0, act = 0;
+    state.accounts.forEach(function (a) { var c = calc(a); ini += a.ini; dep += c.dep; wd += c.wd; bal += c.bal; net += c.net; if (a.status === "active") act++; });
+    var inv = ini + dep, ret = inv ? net / inv * 100 : 0;
+    var n = $("sNet"); n.textContent = money(r2(net), true); n.className = "v " + plClass(net);
     $("sRet").textContent = "Return: " + ret.toFixed(1) + "%";
-    $("sIni").textContent = money(T.ini); $("sDep").textContent = money(T.dep); $("sWd").textContent = money(T.wd); $("sCv").textContent = money(T.cv);
+    $("sIni").textContent = money(ini); $("sDep").textContent = money(dep); $("sWd").textContent = money(wd); $("sCv").textContent = money(r2(bal));
     $("sCnt").textContent = state.accounts.length + (state.accounts.length === 1 ? " client" : " clients") + " (" + act + " active)";
+  }
+
+  function histList(a) {
+    var box = el("details", "hist"); box.open = !!openHist[a.id];
+    box.addEventListener("toggle", function () { openHist[a.id] = box.open; });
+    var sm = el("summary", "", "History (" + a.tx.length + ")"); box.appendChild(sm);
+    var ul = el("ul");
+    if (!a.tx.length) ul.appendChild(el("li", "none", "No entries yet. Press Add entry."));
+    a.tx.map(function (t, i) { return { t: t, i: i }; })
+      .sort(function (x, y) { return x.t.date < y.t.date ? 1 : x.t.date > y.t.date ? -1 : y.i - x.i; })
+      .forEach(function (o) {
+        var t = o.t, li = el("li");
+        li.appendChild(el("span", "d", dayLabel(t.date)));
+        var w = el("span", "w", TYPES[t.type]); if (t.note) w.appendChild(el("small", "", t.note)); li.appendChild(w);
+        var pos = t.type === "deposit" || t.type === "profit";
+        li.appendChild(el("span", "a " + (t.type === "profit" ? "pos" : t.type === "loss" ? "neg" : ""), (pos ? "+" : "-") + money(t.amount).replace(/^-/, "")));
+        var rm = el("button", "rm", "×"); rm.type = "button"; rm.setAttribute("aria-label", "Delete " + TYPES[t.type] + " entry");
+        rm.addEventListener("click", function () { removeTx(a.id, t.id); }); li.appendChild(rm);
+        ul.appendChild(li);
+      });
+    box.appendChild(ul); return box;
   }
 
   function render() {
@@ -337,7 +447,7 @@ body{margin:0}
     var list = visible();
     if (!list.length) { grid.appendChild(el("p", "empty", state.accounts.length ? "No clients match your search or filter." : "No clients yet. Press + Add client to create the first one.")); return; }
     list.forEach(function (a, i) {
-      var c = calc(a), profit = Math.max(c.net, 0), loss = Math.max(-c.net, 0);
+      var c = calc(a);
       var card = el("article", "acct" + (a.status === "inactive" ? " off" : "")); card.style.setProperty("--i", Math.min(i, 8));
       var top = el("div", "a-top"), who = el("div");
       who.appendChild(el("div", "a-name", a.name)); who.appendChild(el("div", "a-mail", a.email || "No email"));
@@ -346,18 +456,18 @@ body{margin:0}
       pill.addEventListener("click", function () { a.status = a.status === "active" ? "inactive" : "active"; save(); render(); });
       top.appendChild(who); top.appendChild(pill); card.appendChild(top);
 
-      var amt = el("div", "a-amt"); amt.appendChild(el("span", "label", "Current value"));
-      var big = el("span", "big", money(a.cv)); amt.appendChild(big);
+      var amt = el("div", "a-amt"); amt.appendChild(el("span", "label", "Current balance"));
+      amt.appendChild(el("span", "big", money(c.bal)));
       amt.appendChild(el("span", "ret " + plClass(c.net), (c.ret >= 0 ? "+" : "") + c.ret.toFixed(1) + "%")); card.appendChild(amt);
 
       var pl = el("div", "pl");
-      [["p", "Profit", money(profit), profit > 0 ? "pos" : ""], ["l", "Loss", money(loss), loss > 0 ? "neg" : ""], ["", "Net P/L", money(c.net, true), plClass(c.net)]].forEach(function (r) {
+      [["p", "Profit", money(c.pr), c.pr > 0 ? "pos" : ""], ["l", "Loss", money(c.ls), c.ls > 0 ? "neg" : ""], ["", "Net P/L", money(c.net, true), plClass(c.net)]].forEach(function (r) {
         var d = el("div", r[0]); d.appendChild(el("span", "label", r[1])); d.appendChild(el("span", "v " + r[3], r[2])); pl.appendChild(d);
       });
       card.appendChild(pl);
 
       var flow = el("div", "flow");
-      [["Initial", a.ini], ["Deposits", a.dep], ["Withdrawals", a.wd]].forEach(function (r) {
+      [["Opening", a.ini], ["Deposits", c.dep], ["Withdrawals", c.wd]].forEach(function (r) {
         var d = el("div"); d.appendChild(document.createTextNode(r[0])); d.appendChild(el("b", "", money(r[1]))); flow.appendChild(d);
       });
       card.appendChild(flow);
@@ -370,62 +480,66 @@ body{margin:0}
       a.ids.forEach(function (t) { ch.appendChild(el("span", "chip idchip", t)); });
       st.appendChild(ch); card.appendChild(st);
 
+      card.appendChild(histList(a));
+
       var act = el("div", "a-actions");
+      var add = el("button", "btn add small", "+ Add entry"); add.type = "button"; add.addEventListener("click", function () { openTx(a.id); });
       var ed = el("button", "btn ghost small", "Edit"); ed.type = "button"; ed.addEventListener("click", function () { openForm(a.id); });
       var del = el("button", "btn danger small", "Delete"); del.type = "button"; del.addEventListener("click", function () { removeAcct(a.id); });
-      act.appendChild(ed); act.appendChild(del); card.appendChild(act);
+      act.appendChild(add); act.appendChild(ed); act.appendChild(del); card.appendChild(act);
       grid.appendChild(card);
     });
   }
 
   function showToast(msg, undo) {
-    $("toastMsg").textContent = msg; $("undo").hidden = !undo; $("toast").hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(function () { $("toast").hidden = true; lastDeleted = null; }, 5000);
+    $("toastMsg").textContent = msg; undoFn = undo || null; $("undo").hidden = !undo; $("toast").hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { $("toast").hidden = true; undoFn = null; }, 6000);
   }
+  $("undo").addEventListener("click", function () { if (undoFn) { var f = undoFn; undoFn = null; f(); } $("toast").hidden = true; });
+
   function removeAcct(id) {
     var i = state.accounts.findIndex(function (a) { return a.id === id; }); if (i < 0) return;
-    lastDeleted = { a: state.accounts[i], i: i }; state.accounts.splice(i, 1); save(); render(); showToast("Client deleted.", true);
+    var gone = state.accounts[i]; state.accounts.splice(i, 1); save(); render();
+    showToast("Client deleted.", function () { state.accounts.splice(i, 0, gone); save(); render(); });
   }
-  $("undo").addEventListener("click", function () {
-    if (!lastDeleted) return; state.accounts.splice(lastDeleted.i, 0, lastDeleted.a); lastDeleted = null; save(); render(); $("toast").hidden = true;
-  });
+  function removeTx(aid, tid) {
+    var a = find(aid); if (!a) return;
+    var i = a.tx.findIndex(function (t) { return t.id === tid; }); if (i < 0) return;
+    var gone = a.tx[i]; a.tx.splice(i, 1);
+    if (calc(a).bal < -0.005) { a.tx.splice(i, 0, gone); showToast("Can't remove this entry: the balance would go below zero."); return; }
+    save(); render();
+    showToast("Entry removed.", function () { a.tx.splice(i, 0, gone); save(); render(); });
+  }
 
+  // ----- Add / edit client
   function renderChips() {
     var box = $("fChips"); box.innerHTML = "";
-    formTraders.forEach(function (t, i) {
-      var c = el("span", "chip", t), x = el("button", "", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + t);
-      x.addEventListener("click", function () { formTraders.splice(i, 1); renderChips(); });
+    formIds.forEach(function (t, i) {
+      var c = el("span", "chip idchip", t), x = el("button", "", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + t);
+      x.addEventListener("click", function () { formIds.splice(i, 1); renderChips(); });
       c.appendChild(x); box.appendChild(c);
     });
-    $("tCount").textContent = formTraders.length + " of " + MAXT;
-    var full = formTraders.length >= MAXT;
+    $("tCount").textContent = formIds.length + " of " + MAXT;
+    var full = formIds.length >= MAXT;
     $("tAdd").disabled = full; $("fTrader").disabled = full;
     $("fTrader").placeholder = full ? "Limit reached (5 IDs)" : "Type an ID or strategy, then press Add";
   }
-  function addTrader() {
+  function addId() {
     var v = $("fTrader").value.trim(); if (!v) return;
-    if (formTraders.length >= MAXT) { $("err").textContent = "You can add at most 5 IDs."; return; }
-    if (formTraders.some(function (t) { return t.toLowerCase() === v.toLowerCase(); })) { $("err").textContent = "That ID is already added."; return; }
-    $("err").textContent = ""; formTraders.push(v); $("fTrader").value = ""; renderChips(); $("fTrader").focus();
+    if (formIds.length >= MAXT) { $("err").textContent = "You can add at most 5 IDs."; return; }
+    if (formIds.some(function (t) { return t.toLowerCase() === v.toLowerCase(); })) { $("err").textContent = "That ID is already added."; return; }
+    $("err").textContent = ""; formIds.push(v); $("fTrader").value = ""; renderChips(); $("fTrader").focus();
   }
-  $("tAdd").addEventListener("click", addTrader);
-  $("fTrader").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addTrader(); } });
-
-  function updatePreview() {
-    var ini = num($("fIni").value), dep = num($("fDep").value), wd = num($("fWd").value), cv = num($("fCv").value);
-    var inv = ini + dep, net = cv + wd - inv, ret = inv ? net / inv * 100 : 0;
-    $("preview").textContent = "Total put in " + money(inv) + "  |  Net P/L " + money(net, true) + " (" + (net >= 0 ? "profit" : "loss") + ")  |  Return " + ret.toFixed(1) + "%";
-  }
-  ["fIni", "fDep", "fWd", "fCv"].forEach(function (id) { $(id).addEventListener("input", updatePreview); });
+  $("tAdd").addEventListener("click", addId);
+  $("fTrader").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addId(); } });
 
   function openForm(id) {
     editingId = id || null;
-    var a = id ? state.accounts.find(function (x) { return x.id === id; }) : null;
+    var a = id ? find(id) : null;
     $("formTitle").textContent = a ? "Edit client" : "Add client"; $("saveBtn").textContent = a ? "Update client" : "Save client";
     $("fName").value = a ? a.name : ""; $("fEmail").value = a ? a.email : ""; $("fMaster").value = a ? a.master : "";
-    $("fStatus").value = a ? a.status : "active";
-    $("fIni").value = a && a.ini ? a.ini : ""; $("fDep").value = a && a.dep ? a.dep : ""; $("fWd").value = a && a.wd ? a.wd : ""; $("fCv").value = a && a.cv ? a.cv : "";
-    formTraders = a ? a.ids.slice() : []; $("fTrader").value = ""; $("err").textContent = ""; renderChips(); updatePreview();
+    $("fStatus").value = a ? a.status : "active"; $("fIni").value = a && a.ini ? a.ini : "";
+    formIds = a ? a.ids.slice() : []; $("fTrader").value = ""; $("err").textContent = ""; renderChips();
     $("formOv").hidden = false; $("fName").focus();
   }
   function closeForm() { $("formOv").hidden = true; editingId = null; }
@@ -435,21 +549,84 @@ body{margin:0}
 
   $("form").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    var name = $("fName").value.trim(), email = $("fEmail").value.trim();
+    var name = $("fName").value.trim(), email = $("fEmail").value.trim(), ini = $("fIni").value;
     if (!name) { $("err").textContent = "Enter the client name."; $("fName").focus(); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("err").textContent = "Enter a valid email or leave it empty."; $("fEmail").focus(); return; }
-    var ids = ["fIni", "fDep", "fWd", "fCv"];
-    for (var i = 0; i < ids.length; i++) { var v = $(ids[i]).value; if (v !== "" && !(Number(v) >= 0)) { $("err").textContent = "Amounts cannot be negative."; $(ids[i]).focus(); return; } }
+    if (ini !== "" && !(Number(ini) >= 0)) { $("err").textContent = "The opening amount cannot be negative."; $("fIni").focus(); return; }
     var pending = $("fTrader").value.trim();
-    if (pending && formTraders.length < MAXT && !formTraders.some(function (t) { return t.toLowerCase() === pending.toLowerCase(); })) formTraders.push(pending);
-    var data = { name: name, email: email, master: $("fMaster").value.trim(), ids: formTraders.slice(0, MAXT),
-      ini: num($("fIni").value), dep: num($("fDep").value), wd: num($("fWd").value), cv: num($("fCv").value), status: $("fStatus").value };
+    if (pending && formIds.length < MAXT && !formIds.some(function (t) { return t.toLowerCase() === pending.toLowerCase(); })) formIds.push(pending);
     var msg;
-    if (editingId) { var a = state.accounts.find(function (x) { return x.id === editingId; }); if (a) { for (var k in data) a[k] = data[k]; a.example = false; } msg = "Client updated."; }
-    else { data.id = "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); state.accounts.unshift(clean(data, 0)); msg = "Client saved."; }
-    save(); closeForm(); render(); showToast(msg, false);
+    if (editingId) {
+      var a = find(editingId);
+      if (a) {
+        var probe = { ini: num(ini), tx: a.tx };
+        if (calc(probe).bal < -0.005) { $("err").textContent = "That opening amount would make the balance negative."; $("fIni").focus(); return; }
+        a.name = name; a.email = email; a.master = $("fMaster").value.trim(); a.ids = formIds.slice(0, MAXT); a.ini = num(ini); a.status = $("fStatus").value; a.example = false;
+      }
+      msg = "Client updated.";
+    } else {
+      state.accounts.unshift(clean({ name: name, email: email, master: $("fMaster").value.trim(), ids: formIds.slice(0, MAXT), ini: ini, status: $("fStatus").value, tx: [] }, 0));
+      msg = "Client saved. Press Add entry on the card to record deposits, profit and loss.";
+    }
+    save(); closeForm(); render(); showToast(msg);
   });
 
+  // ----- Add entry (deposit / withdrawal / profit / loss / balance now)
+  function setType(t) {
+    txType = t;
+    Array.prototype.forEach.call(document.querySelectorAll(".types button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-t") === t ? "true" : "false"); });
+    $("txAmountLabel").firstChild.textContent = t === "balance" ? "Balance in the account right now" : "Amount";
+    $("txErr").textContent = ""; txPreview();
+  }
+  function txPreview() {
+    var a = txClient ? find(txClient) : null; if (!a) return;
+    var c = calc(a), v = num($("txAmount").value), t = txType;
+    $("txAvail").textContent = "Current balance " + money(c.bal);
+    if (!v) { $("txPreview").textContent = t === "balance" ? "Type the balance you see in the account. The app records the profit or loss for you." : "Balance after this entry will show here."; return; }
+    if (t === "balance") {
+      var d = r2(v - c.bal);
+      $("txPreview").textContent = d > 0 ? "This records a profit of " + money(d) + ". Balance becomes " + money(v) + "." : d < 0 ? "This records a loss of " + money(-d) + ". Balance becomes " + money(v) + "." : "Same as the current balance. Nothing to record.";
+      return;
+    }
+    var after = t === "deposit" || t === "profit" ? c.bal + v : c.bal - v;
+    $("txPreview").textContent = "Balance after: " + money(r2(after)) + (after < -0.005 ? "  (not enough balance)" : "");
+  }
+  function openTx(id) {
+    var a = find(id); if (!a) return;
+    txClient = id; $("txTitle").textContent = "Add entry: " + a.name;
+    $("txAmount").value = ""; $("txNote").value = ""; $("txDate").value = todayStr; $("txErr").textContent = "";
+    setType("deposit"); $("txOv").hidden = false; $("txAmount").focus();
+  }
+  function closeTx() { $("txOv").hidden = true; txClient = null; }
+  Array.prototype.forEach.call(document.querySelectorAll(".types button"), function (b) { b.addEventListener("click", function () { setType(b.getAttribute("data-t")); }); });
+  $("txAmount").addEventListener("input", function () { $("txErr").textContent = ""; txPreview(); });
+  $("txClose").addEventListener("click", closeTx); $("txCancel").addEventListener("click", closeTx);
+  $("txOv").addEventListener("click", function (e) { if (e.target === $("txOv")) closeTx(); });
+  $("txForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var a = find(txClient); if (!a) return closeTx();
+    var c = calc(a), v = num($("txAmount").value), date = $("txDate").value, note = $("txNote").value.trim(), t = txType;
+    if (!(v > 0)) { $("txErr").textContent = t === "balance" ? "Enter the balance you see in the account." : "Enter an amount greater than 0."; $("txAmount").focus(); return; }
+    if (!date || date < "2000-01-01" || date > "2100-12-31") { $("txErr").textContent = "Pick a valid date."; $("txDate").focus(); return; }
+    var entry, label;
+    if (t === "balance") {
+      var d = r2(v - c.bal);
+      if (d === 0) { $("txErr").textContent = "That is the same as the current balance. Nothing to record."; return; }
+      entry = { type: d > 0 ? "profit" : "loss", amount: Math.abs(d), date: date, note: note || "Balance update" };
+    } else {
+      if (t === "withdrawal" && v > c.bal + 0.005) { $("txErr").textContent = "Only " + money(c.bal) + " is available to withdraw."; $("txAmount").focus(); return; }
+      if (t === "loss" && v > c.bal + 0.005) { $("txErr").textContent = "A loss cannot be more than the balance (" + money(c.bal) + ")."; $("txAmount").focus(); return; }
+      entry = { type: t, amount: v, date: date, note: note };
+    }
+    var clean1 = cleanTx(entry); a.tx.push(clean1); openHist[a.id] = true; save();
+    var nb = calc(a).bal; label = TYPES[clean1.type];
+    closeTx(); render();
+    showToast(label + " of " + money(clean1.amount) + " added. Balance is now " + money(nb) + ".", function () {
+      var i = a.tx.findIndex(function (x) { return x.id === clean1.id; }); if (i >= 0) { a.tx.splice(i, 1); save(); render(); }
+    });
+  });
+
+  // ----- Search, filter, currency, examples
   $("search").addEventListener("input", function () { query = $("search").value; render(); });
   Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
     b.addEventListener("click", function () {
@@ -461,7 +638,7 @@ body{margin:0}
   $("currency").addEventListener("change", function () { state.currency = $("currency").value; save(); render(); });
   $("clearExamples").addEventListener("click", function () { state.accounts = state.accounts.filter(function (a) { return !a.example; }); save(); render(); });
 
-  // Backup and restore
+  // ----- Backup and restore
   function closeBackup() { $("bkOv").hidden = true; restoreArmed = false; $("bkRestore").textContent = "Restore from text"; }
   $("backupBtn").addEventListener("click", function () { $("bkText").value = JSON.stringify(state); $("bkMsg").textContent = ""; $("bkOv").hidden = false; });
   $("bkClose").addEventListener("click", closeBackup);
@@ -479,7 +656,11 @@ body{margin:0}
     state = { currency: typeof s.currency === "string" ? s.currency : "$", accounts: s.accounts.filter(function (x) { return x && typeof x === "object"; }).map(clean) };
     save(); render(); restoreArmed = false; $("bkRestore").textContent = "Restore from text"; $("bkMsg").textContent = "Restored " + state.accounts.length + " clients.";
   });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("formOv").hidden) closeForm(); if (!$("bkOv").hidden) closeBackup(); } });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!$("formOv").hidden) closeForm(); if (!$("txOv").hidden) closeTx(); if (!$("bkOv").hidden) closeBackup();
+  });
+  $("fTrader").maxLength = 60; $("txDate").min = "2000-01-01"; $("txDate").max = "2100-12-31";
 
   load(); render();
 })();
