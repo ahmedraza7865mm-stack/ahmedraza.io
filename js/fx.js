@@ -22,7 +22,7 @@
   document.addEventListener('mouseleave',function(){if(ring){ring.classList.remove('on');dot.classList.remove('on');}});
   document.addEventListener('mouseover',function(e){
     if(!ring)return;var t=e.target;
-    if(t.closest&&t.closest('a,button,input,textarea,.svc,.why,.skillgroup,.fact,.tool,.stat,.proj,.pill,video'))ring.classList.add('hot');else ring.classList.remove('hot');
+    if(t.closest&&t.closest('a,button,input,textarea,.card,.wi,.chip,video'))ring.classList.add('hot');else ring.classList.remove('hot');
   });
   window.addEventListener('mousedown',function(){if(ring)ring.classList.add('down');});
   window.addEventListener('mouseup',function(){if(ring)ring.classList.remove('down');});
