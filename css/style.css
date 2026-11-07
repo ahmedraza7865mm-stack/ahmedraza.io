@@ -341,3 +341,55 @@ em,.h2 .w.e>span,.h2 .w.e{background:var(--grad-txt);-webkit-background-clip:tex
 .fab .up:hover{border-color:var(--accent-text);color:var(--accent-text)}
 .ld-top .logo{width:56px;height:32px}
 @media (max-width:640px){.fab .wa span{display:none}.fab .wa{width:48px;height:48px;padding:0}.fab{right:12px;bottom:14px}}
+
+/* process, faq, tips, features */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;counter-reset:s}
+.step{padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--card);position:relative}
+.step h3{font-size:26px;margin:34px 0 10px}.step p{font-size:14px;color:var(--muted)}
+.step:not(:last-child)::after{content:"→";position:absolute;right:-12px;top:50%;z-index:2;width:24px;height:24px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:12px;color:var(--accent-text);border:1px solid var(--line)}
+.faq{border-top:1px solid var(--line)}
+.qa{border-bottom:1px solid var(--line)}
+.qa summary{list-style:none;cursor:pointer;padding:22px 40px 22px 0;font:500 clamp(18px,2vw,24px)/1.25 var(--hf);position:relative}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:"+";position:absolute;right:4px;top:50%;translate:0 -50%;font:300 28px var(--hf);color:var(--accent-text);transition:rotate .3s}
+.qa[open] summary::after{rotate:45deg}
+.qa p{color:var(--muted);padding:0 40px 24px 0;max-width:60ch}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c3 .card{min-height:0}
+.feat{display:grid;gap:7px;margin:-4px 0 2px}
+.feat li{position:relative;padding-left:22px;font-size:14px;color:var(--ink)}
+.feat li::before{content:"✓";position:absolute;left:0;color:var(--cyan);font-size:13px}
+blockquote{font:400 20px/1.4 var(--hf)}figcaption{color:var(--muted);font-size:13px;margin-top:12px}
+@media (max-width:1020px){.steps{grid-template-columns:1fr 1fr}.step::after{display:none}.c3{grid-template-columns:1fr}}
+@media (max-width:640px){.steps{grid-template-columns:1fr}.qa summary{font-size:18px}}
+/* light theme */
+#theme .sun{display:none}
+[data-theme=light] #theme .sun{display:block}[data-theme=light] #theme .moon{display:none}
+[data-theme=light]{--bg:#faf8ff;--bg-alt:#f2eefb;--card:#ffffff;--card2:#f6f2ff;--ink:#1a1230;--muted:#625c7e;--line:#e1daf1;--accent:#e0457a;--accent-text:#d02e6a;--accent-soft:rgba(224,69,122,.1);--cyan:#0a8fa8;--warm:#c97a00;--grad-txt:linear-gradient(100deg,#d02e6a,#e08a00)}
+[data-theme=light] body{background:var(--bg)}
+[data-theme=light] .top.s{background:rgba(250,248,255,.8)}
+[data-theme=light] .btn-line{border-color:#cfc6e6;color:var(--ink)}
+[data-theme=light] .icon-btn,[data-theme=light] .toggle,[data-theme=light] .chip-live,[data-theme=light] .tag,[data-theme=light] .pills span{border-color:var(--line)}
+[data-theme=light] .pills span{background:var(--card2)}
+[data-theme=light] .fi{background:rgba(255,255,255,.85);box-shadow:0 12px 30px rgba(80,60,140,.15)}
+[data-theme=light] .giant{-webkit-text-stroke:1px rgba(26,18,48,.1)}
+[data-theme=light] .wm{-webkit-text-stroke:1px rgba(26,18,48,.25)}
+[data-theme=light] .logo{filter:saturate(1.1)}
+[data-theme=light] .mnav a:not(.btn){color:var(--ink)}
+[data-theme=light] .o1,[data-theme=light] .o2{opacity:.5}
+[data-theme=light] .grid-lines{opacity:.5}
+[data-theme=light] .seq span.on{color:#6d3bd6}
+[data-theme=light] .chip[aria-pressed=true]{color:#5b2fc0}
+[data-theme=light] .pv-h{color:#5b2fc0}
+[data-theme=light] .live{color:#0a8fa8}
+[data-theme=light] .wi.on{background:linear-gradient(90deg,rgba(139,92,246,.1),transparent)}
+[data-theme=light] .sitefoot{background:var(--bg-alt)}
+[data-theme=light] .fab .up{background:#fff}
+[data-theme=light] input,[data-theme=light] textarea{background:#fff}
+[data-theme=light] .marquee{background:var(--bg-alt)}
+[data-theme=light] .step:not(:last-child)::after{background:var(--bg)}
+[data-theme=light] .chip-live{background:rgba(255,255,255,.75);color:#4a4466}
+[data-theme=light] .hero-person{filter:drop-shadow(0 20px 30px rgba(80,60,140,.25))}
+@media (min-width:1021px){.hero-foot .stats{margin-right:200px}}
+@media (max-width:1020px){.step:not(:last-child)::after{display:none}}
+.sticky p+.btn{margin-top:20px}
