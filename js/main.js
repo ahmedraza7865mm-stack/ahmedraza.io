@@ -8,6 +8,7 @@
     top.classList.toggle('s',h.scrollTop>20);
   }
   window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  var upb=$('#up');if(upb){upb.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});window.addEventListener('scroll',function(){upb.classList.toggle('show',window.scrollY>900);},{passive:true});}
   /* mobile menu */
   var mb=$('#menu'),mn=$('#mnav');
   function menu(o){mn.hidden=!o;mb.setAttribute('aria-expanded',o);document.body.classList.toggle('lock',o);}
